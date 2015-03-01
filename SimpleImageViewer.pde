@@ -1,3 +1,5 @@
+import android.content.res.AssetManager;
+PImage image;
 int mode;
 float galleryWidth, galleryHeight, sectionWidth, spacing, mousX, mousY;
 int selectedIndex, leftMost, rightMost;
@@ -13,35 +15,39 @@ void setup() {
   sectionWidth = galleryWidth/6;
   mouseDown = false;
   spacing = galleryWidth/30;
-  images = new ArrayList<Button>();
-  images.add(new Button("images/Test0.png"));
-  images.add(new Button("images/Test1.png"));
-  images.add(new Button("images/Test2.png"));
-  images.add(new Button("images/Test3.png"));
-  images.add(new Button("images/Test4.png"));
-  images.add(new Button("images/Test5.png"));
-  images.add(new Button("images/Test6.png"));
-  images.add(new Button("images/Test7.png"));
-  images.add(new Button("images/Test8.png"));
-  images.add(new Button("images/Test9.png"));
-  images.add(new Button("images/TestA.png"));
-  images.add(new Button("images/TestB.png"));
-  images.add(new Button("images/TestC.png"));
-  images.add(new Button("images/TestD.png"));
-  images.add(new Button("images/TestE.png"));
-  images.add(new Button("images/TestF.png"));
-  left = new Button("images/arrowleft.png");
-  right = new Button("images/arrowright.png");
+  loadImgs();
+  left = new Button("arrowleft.png");
+  right = new Button("arrowright.png");
   leftMost = 0;
   rightMost = images.size() - 1;
   resizeImages(sectionWidth, galleryHeight);
   handleArrows(galleryWidth, galleryHeight);
 }
-
+void loadImgs() {
+  String [] fileNames; 
+  fileNames = new String[2];
+  AssetManager am = getAssets();
+  // load the files from Image folder 
+  try {
+    fileNames = am.list("images");  // am - returns array of file names
+    images = new ArrayList<Button>();
+  } 
+  catch (IOException e) {
+    print("Error, cannot find image!"); 
+    return;
+  }
+  // loads the entire collection of images into an array
+  for (int k = 0; k < fileNames.length; k++) {
+    if (fileNames.length >= 1 && fileNames[k].endsWith(".png")) {
+      images.add(new Button("images/" + fileNames[k]));
+    }
+  }
+}
 void resizeImages(float section, float h) {
   for (int i =0; i < images.size (); i++) {
     Button curr = images.get(i);
-    curr.unfocus(section, h);
+    curr.zoomIn(section, h);
+    curr.zoomOut(section, h);
 
     float yLocation = h/2f - curr.getHeight()/2f;
     curr.setPosition(spacing + (i *(spacing + sectionWidth)), (int) yLocation);
@@ -49,33 +55,45 @@ void resizeImages(float section, float h) {
 }
 
 void handleArrows(float w, float h) {
-  float size = h/20;
-  left.unfocus(size, size);
-  left.setPosition(0, h - size);
+  float size = h/15;
+  left.zoomOut(size, size);
+  left.setPosition(.5*size, h - size*1.5);
 
-  right.unfocus(size, size);
-  right.setPosition(w - size, h - size);
+  right.zoomOut(size, size);
+  right.setPosition(w - 1.5*size, h - size*1.5);
 }
 
 void mousePressed() {
   mouseDown = true;
   mousX = mouseX;
   mousY = mouseY;
+  checkMouse(mouseX, mouseY);
 }
 
 void mouseReleased() {
   mouseDown = false;
+  checkMouse(mouseX, mouseY);
+}
+
+void checkMouse(int x, int y) {
+  if (mode==0) {
+    gallery(x, y);
+  } else {
+    zoom(x, y);
+  }
 }
 
 void draw() {
-  background(0);
+  background(255);
   if (mode ==0) {
     drawMode0();
-    gallery();
+    //gallery(x, y);
   } else {
     drawMode1();
-    zoom();
+    //zoom(x, y);
   }
+  left.render(galleryWidth, galleryHeight, false);
+  right.render(galleryWidth, galleryHeight, false);
 }
 
 void drawMode0() {
@@ -86,20 +104,17 @@ void drawMode0() {
     Button curr = images.get(i);
     curr.render(galleryWidth, galleryHeight, false);
   }
-
-  left.render(galleryWidth, galleryHeight, false);
-  right.render(galleryWidth, galleryHeight, false);
 }
 void drawMode1() {
   images.get(selectedIndex).render(galleryWidth, galleryHeight, true);
 }
-void gallery() {
+void gallery(int x, int y) {
   if (mouseDown) {
     for (int i =0; i< images.size (); i++) {
       if (images.get(i).check(mousX, mousY)) {
         selectedIndex = i;
         mode = 1;
-        images.get(i).focus(galleryWidth, galleryHeight);
+        images.get(i).zoomIn(galleryWidth, galleryHeight);
       }
     }
 
@@ -112,7 +127,19 @@ void gallery() {
     }
   }
 }
+void zoom(int x, int y) {
+  if (mouseDown) {
+    mode = 0;
+    images.get(selectedIndex).zoomOut(sectionWidth, galleryHeight);
+    if (left.check(mousX, mousY)) {
+      moveLeft();
+    }
 
+    if (right.check(mousX, mousY)) {
+      moveRight();
+    }
+  }
+}
 void moveLeft() {
   float temp = images.get(rightMost).getX();
   for (int i = 0; i < images.size (); i++) {
@@ -138,14 +165,6 @@ void moveRight() {
   rightMost--;
   if (rightMost < 0)
     rightMost = images.size() - 1;
-}
-
-
-void zoom() {
-  if (mouseDown) {
-    mode = 0;
-    images.get(selectedIndex).unfocus(sectionWidth, galleryHeight);
-  }
 }
 
 
@@ -195,42 +214,33 @@ class Button {
       zoomx = w/2 - this.w/2;
       zoomy = h/2 - this.h/2;
 
-      image(image, zoomx, zoomy);
+      image(image, zoomx, zoomy, this.w, this.h);
     } else
       image(image, x, y, this.w, this.h);
 
-    System.out.println("render " + w + " " + h);
+    //System.out.println("render " + w + " " + h);
   }
 
-  public void focus(float w, float h) {
-    float tempw = this.w, temph = this.h, expand = 1.15f;
-
-    if (image.width > w || image.height > h) {
-      image.loadPixels();
-
-      if (image.width > image.height) {
-        image.resize(0, (int)h);
-      } else
-        image.resize((int)w, 0);
-
-      image.updatePixels();
+  void zoomIn(float w, float h) {
+    // float w = width;
+    //float h = height;
+    float currentW = this.w, currentH = this.h;
+    float expansion = 1.03f;
+    while (currentW * expansion < width && currentH * expansion < height) {
+      currentW = currentW * expansion;
+      currentH = currentH * expansion;
     }
-
-    while (tempw * expand < w && temph * expand < h) {
-      tempw = tempw * expand;
-      temph = temph * expand;
-    }
-    setSize(tempw, temph);
+    setSize((int)currentW, (int)currentH);
   }
-
-  public void unfocus(float maxWidth, float h) {
-    float tempw = this.w, temph = this.h, shrink = .85f;
-    while (tempw * shrink> maxWidth || temph * shrink > h) {
-      tempw = tempw * shrink;
-      temph = temph * shrink;
+  void zoomOut(float maxWidth, float h) {
+    float currentW = this.w, currentH = this.h;
+    float shrink = .95f;
+    // shrink to fit. 
+    while (currentW * shrink > maxWidth || currentH * shrink > height) {
+      currentW = currentW * shrink;
+      currentH = currentH * shrink;
     }
-    setSize(tempw, temph);
-    System.out.println("temp size " + tempw + " " + temph);
-    System.out.println("max size " + maxWidth + " " + h);
+    setSize((int)currentW, (int)currentH);
+    this.y = h/2 - this.h/2;
   }
 }
