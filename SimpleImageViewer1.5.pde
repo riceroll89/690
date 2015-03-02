@@ -7,26 +7,6 @@ ArrayList<Button> images;
 Button left, right;
 boolean mouseDown;
 
-void setup() {
-  orientation(LANDSCAPE);
-  //size(1920, 1080);
-  galleryWidth = width;
-  galleryHeight = height;
-  mode = 0;
-  sectionWidth = galleryWidth/6;
-  mouseDown = false;
-  spacing = galleryWidth/30;
-  loadImgs();
-  left = new Button("arrowleft.png");
-  right = new Button("arrowright.png");
-  leftMost = 0;
-  rightMost = images.size() - 1;
-  resizeImages(sectionWidth, galleryHeight);
-  handleArrows(galleryWidth, galleryHeight);
-  speed = (sectionWidth + spacing)/frames;
-  zoomSpeed = width/frames;
-}
-
 //project 1.5
 int frames = 5;
 int currentFrame = 0;
@@ -47,7 +27,26 @@ void move() {
     moveRight();
   }
 }
-//project 1.5 end
+//project 1.5
+
+void setup() {
+  orientation(LANDSCAPE);
+  galleryWidth = width;
+  galleryHeight = height;
+  mode = 0;
+  sectionWidth = galleryWidth/6;
+  mouseDown = false;
+  spacing = galleryWidth/30;
+  loadImgs();
+  left = new Button("arrowleft.png");
+  right = new Button("arrowright.png");
+  leftMost = 0;
+  rightMost = images.size() - 1;
+  resizeImages(sectionWidth, galleryHeight);
+  handleArrows(galleryWidth, galleryHeight);
+  speed = (sectionWidth + spacing)/frames;
+  zoomSpeed = width/frames;
+}
 
 void loadImgs() {
   String [] fileNames; 
@@ -89,14 +88,12 @@ void handleArrows(float w, float h) {
   right.zoomOut(size, size);
   right.setPosition(w - 1.5*size, h - size*1.5);
 }
-/*
 void mousePressed() {
- mouseDown = true;
- mousX = mouseX;
- mousY = mouseY;
- checkMouse(mouseX, mouseY);
- }
- */
+  mouseDown = true;
+  mousX = mouseX;
+  mousY = mouseY;
+  checkMouse(mouseX, mouseY);
+}
 void mouseReleased() {
   mouseDown = false;
   checkMouse(mouseX, mouseY);
@@ -104,9 +101,9 @@ void mouseReleased() {
 
 void checkMouse(int x, int y) {
   if (mode==0) {
-    gallery(x, y);
+    galleryInput(x, y);
   } else {
-    zoom(x, y);
+    zoomInput(x, y);
   }
 }
 
@@ -114,10 +111,8 @@ void draw() {
   background(255);
   if (mode ==0) {
     drawMode0();
-    //gallery(x, y);
   } else {
     drawMode1();
-    //zoom(x, y);
   }
   left.render(galleryWidth, galleryHeight, false);
   right.render(galleryWidth, galleryHeight, false);
@@ -125,9 +120,6 @@ void draw() {
 }
 
 void drawMode0() {
-  float startingLocation = width/50;
-  float spacing = width/50;
-
   for (int i =0; i < images.size (); i++) {
     Button curr = images.get(i);
     curr.render(galleryWidth, galleryHeight, false);
@@ -138,41 +130,50 @@ void drawMode1() {
   images.get(selectedIndex).render(galleryWidth, galleryHeight, true);
   //}
 }
-void gallery(int x, int y) {
-  for (int i =0; i< images.size (); i++) {
-    if (images.get(i).check(x, y)) {
-      selectedIndex = i;
-      mode = 1;
-      images.get(selectedIndex).zoomIn(galleryWidth, galleryHeight);
-      //images.get(i).zoomAll();
+void galleryInput(int x, int y) {
+  if (mouseDown) {
+    for (int i =0; i< images.size (); i++) {
+      if (images.get(i).check(x, y)) {
+        selectedIndex = i;
+        mode = 1;
+        images.get(selectedIndex).zoomIn(galleryWidth, galleryHeight);
+        //images.get(i).zoomAll();
+      }
     }
-  }
-  if (currentFrame < 0) {
-    if (left.check(x, y)) {
-      currentFrame = frames*5;
-      movingLeft = true;
+    if (currentFrame < 0) {
+      if (left.check(x, y)) {
+        currentFrame = frames*5;
+        movingLeft = true;
+      }
     }
-  }
-  if (currentFrame < 0) {
-    if (right.check(x, y)) {
-      currentFrame = frames*5;
-      movingLeft = false;
+    if (currentFrame < 0) {
+      if (right.check(x, y)) {
+        currentFrame = frames*5;
+        movingLeft = false;
+      }
     }
   }
 }
-void zoom(int x, int y) {
-  mode = 0;
-  images.get(selectedIndex).zoomOut(sectionWidth, galleryHeight);
-  if (left.check(x, y)) {
-    moveLeft();
-  }
-  if (right.check(x, y)) {
-    moveRight();
+void zoomInput(int x, int y) {
+  if (mouseDown) {
+    mode = 0;
+    images.get(selectedIndex).zoomOut(sectionWidth, galleryHeight);
+    if (currentFrame < 0) {
+      if (left.check(x, y)) {
+        currentFrame = frames*5;
+        movingLeft = true;
+      }
+    }
+    if (currentFrame < 0) {
+      if (right.check(x, y)) {
+        currentFrame = frames*5;
+        movingLeft = false;
+      }
+    }
   }
 }
 void moveRight() {
   if (mode == 0) {
-    float temp = images.get(rightMost).getX();
     for (int i = 0; i < images.size (); i++) {
       images.get(i).setX(images.get(i).getX() - speed);
     } 
@@ -185,7 +186,7 @@ void moveRight() {
         leftMost = 0;
       }
     }
-  } else if (mode == 1) {
+  } else {
     for (int i = 0; i < images.size (); i++) {
       images.get(i).setX(images.get(i).getX() - zoomSpeed);
     }
@@ -193,7 +194,6 @@ void moveRight() {
 }
 void moveLeft() {
   if (mode == 0) {
-    float temp = images.get(leftMost).getX();
     for (int i = 0; i < images.size (); i++) {
       images.get(i).setX(images.get(i).getX() + speed);
     } 
@@ -206,7 +206,7 @@ void moveLeft() {
         rightMost = images.size() - 1;
       }
     }
-  } else if (mode == 1) {
+  } else {
     for (int i = 0; i < images.size (); i++) {
       images.get(i).setX(images.get(i).getX() + zoomSpeed);
     }
@@ -264,9 +264,9 @@ class Button {
       zoomy = h/2 - this.h/2;
 
       image(image, zoomx, zoomy, this.w, this.h);
-    } else
+    } else {
       image(image, x, y, this.w, this.h);
-
+    }
     //System.out.println("render " + w + " " + h);
   }
 
